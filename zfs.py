@@ -132,6 +132,9 @@ form_template = '''
       <label for="force_sync">Force Sync (-F): (Will Mirror Source) </label>
       <input type="checkbox" name="force_sync" id="force_sync">
 
+      <label for="compression">Enable Compression (-c): </label>
+      <input type="checkbox" name="compression" id="compression" checked>  <!-- Default to checked -->
+
       <button type="submit" name="action" value="incremental">Generate Incremental Command</button>
     </form>
 
@@ -179,12 +182,14 @@ def zfs_command_generator():
             last_snapshot = request.form['last_snapshot']    # Last snapshot in the incremental range
             destination_san = request.form['destination_san']  # Destination SAN server
             force_sync = 'force_sync' in request.form  # Check if the force sync checkbox is checked
+            compression = 'compression' in request.form  # Check if the compression checkbox is checked
 
             # Extract the zpool name from the first snapshot (assumed to be the first part of the path)
             first_snapshot_prefix = first_snapshot.split('/')[0]  # Extract the zpool name (e.g., hqs1p1)
 
-            # Choose the appropriate ZFS send flag based on whether force sync is enabled
-            flag = "-sF" if force_sync else "-s"
+            # Choose the appropriate ZFS send flag based on whether force sync and compression are enabled
+            compression_flag = "-c" if compression else ""
+            flag = f"{compression_flag} -sF" if force_sync else f"{compression_flag} -s"
 
             # Append 'p1' to the destination SAN to construct the destination pool name
             destination_pool = f"{destination_san}p1"
@@ -198,7 +203,7 @@ def zfs_command_generator():
 
             # Construct the incremental ZFS send command with mbuffer for optimized data transfer
             incremental_command = (
-                f'zfs send -c -RI {first_snapshot} {last_snapshot} | '
+                f'zfs send {compression_flag} -RI {first_snapshot} {last_snapshot} | '
                 f'mbuffer -s 4M -m 8G | ssh {destination_san} '
                 f'"mbuffer -s 4M -m 8G | zfs receive {flag} {destination_pool}/{dataset_name}"'
             )
@@ -232,5 +237,4 @@ def zfs_command_generator():
 
 # Entry point for running the Flask application in debug mode
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
-
+    app.run(debug=True, host='127.0.0.1', port=5050)

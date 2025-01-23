@@ -189,7 +189,7 @@ def zfs_command_generator():
 
             # Choose the appropriate ZFS send flag based on whether force sync and compression are enabled
             compression_flag = "-c" if compression else ""
-            flag = f"{compression_flag} -sF" if force_sync else f"{compression_flag} -s"
+            flag = "-sF" if force_sync else "-s"
 
             # Append 'p1' to the destination SAN to construct the destination pool name
             destination_pool = f"{destination_san}p1"

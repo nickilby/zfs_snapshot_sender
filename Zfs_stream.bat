@@ -1,3 +1,3 @@
 @echo off
-streamlit run zfs_streamlit.py
+streamlit run app.py
 pause
